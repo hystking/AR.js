@@ -148,9 +148,20 @@
 	mesh.position.y	= 0.5
 	// arWorldRoot.add( mesh );
 
-  var modelMaterial = new THREE.MeshNormalMaterial({
+  var modelMaterial = new THREE.MeshStandardMaterial({
     skinning: true, // これをつけないと、bone での変形が効かない
+    color: 0xffdddd,
+    roughness: 1,
+    metalness: 0,
   });
+
+
+  const directionalLight = new THREE.DirectionalLight(0xaaaaaa);
+  directionalLight.position.set(0, 2, 8);
+  arWorldRoot.add(directionalLight);
+
+  const ambientLight = new THREE.AmbientLight(0xffffff, .3);
+  arWorldRoot.add(ambientLight);
 
   /*
     JSONLoader でファイルの読み込み
@@ -164,14 +175,36 @@
     man = new THREE.SkinnedMesh(geometry, modelMaterial);
     mixer = new THREE.AnimationMixer(man);
     var action = mixer.clipAction(geometry.animations[0]);
+    var scale = .1;
     action.play();
-    man.scale.set(.5, .5, .5);
+    console.log(Math.min.apply(Math, geometry.vertices.map(v => v.y)))
+    man.position.y = - Math.min.apply(Math, geometry.vertices.map(v => v.y)) * scale;
+    man.scale.set(scale, scale, scale);
     arWorldRoot.add(man);
   });
 
-  onRenderFcts.push(function(elapsedTime) {
-    if(mixer) {
-      mixer.update(elapsedTime);
+  function manPosition(time) {
+    const angle = time * Math.PI * .2;
+    return new THREE.Vector3(
+      Math.cos(angle * 1.5) * .7,
+      0,
+      Math.sin(angle * 1.7) * .7,
+    );
+  }
+  onRenderFcts.push(function(elapsedTime, totalTime) {
+    if(man) {
+      const eps = 0.1;
+      const pos1 = manPosition(totalTime);
+      const pos2 = manPosition(totalTime + eps);
+      const dx = pos2.x - pos1.x;
+      const dz = pos2.z - pos1.z;
+      man.position.x = pos1.x;
+      man.position.z = pos1.z;
+      man.rotation.y = - Math.atan2(dz, dx) + Math.PI / 2;
+      const norm = Math.sqrt(dx * dx + dz * dz);
+      if(mixer) {
+        mixer.update(norm * .7);
+      }
     }
   });
 
