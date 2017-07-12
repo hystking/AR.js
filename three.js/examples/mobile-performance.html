@@ -140,14 +140,41 @@
 	}); 
 	var mesh	= new THREE.Mesh( geometry, material );
 	mesh.position.y	= geometry.parameters.height/2
-	arWorldRoot.add( mesh );
+	// arWorldRoot.add( mesh );
 	
 	var geometry	= new THREE.TorusKnotGeometry(0.3,0.1,64,16);
 	var material	= new THREE.MeshNormalMaterial(); 
 	var mesh	= new THREE.Mesh( geometry, material );
 	mesh.position.y	= 0.5
-	arWorldRoot.add( mesh );
-	
+	// arWorldRoot.add( mesh );
+
+  var modelMaterial = new THREE.MeshNormalMaterial({
+    skinning: true, // これをつけないと、bone での変形が効かない
+  });
+
+  /*
+    JSONLoader でファイルの読み込み
+  */
+
+  var loader = new THREE.JSONLoader();
+  var man;
+  var mixer;
+
+  loader.load("models/man.json", function (geometry) {
+    man = new THREE.SkinnedMesh(geometry, modelMaterial);
+    mixer = new THREE.AnimationMixer(man);
+    var action = mixer.clipAction(geometry.animations[0]);
+    action.play();
+    man.scale.set(.5, .5, .5);
+    arWorldRoot.add(man);
+  });
+
+  onRenderFcts.push(function(elapsedTime) {
+    if(mixer) {
+      mixer.update(elapsedTime);
+    }
+  });
+
 	onRenderFcts.push(function(){
 		mesh.rotation.x += 0.1
 	})
